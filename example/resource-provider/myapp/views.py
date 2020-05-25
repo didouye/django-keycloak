@@ -9,6 +9,7 @@ from django.contrib.auth.mixins import (
     LoginRequiredMixin,
     PermissionRequiredMixin
 )
+from django.core.exceptions import ObjectDoesNotExist
 from django.views.generic.base import TemplateView
 from jose.exceptions import JWTError
 
@@ -27,9 +28,11 @@ class Secured(LoginRequiredMixin, TemplateView):
     template_name = 'myapp/secured.html'
 
     def call_api(self):
-        if not hasattr(self.request.user, 'oidc_profile'):
+        try:
+            oidc_profile = self.request.user.oidc_profile
+        except ObjectDoesNotExist:
             return None
-        oidc_profile = self.request.user.oidc_profile
+
         remote_client = oidc_profile.realm.remote_clients.get(
             name='resource-provider-api')
 
@@ -62,7 +65,9 @@ class Secured(LoginRequiredMixin, TemplateView):
         )
 
     def get_decoded_jwt(self):
-        if not hasattr(self.request.user, 'oidc_profile'):
+        try:
+            oidc_profile = self.request.user.oidc_profile
+        except ObjectDoesNotExist:
             return None
 
         oidc_profile = self.request.user.oidc_profile

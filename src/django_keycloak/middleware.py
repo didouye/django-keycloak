@@ -3,6 +3,7 @@ import re
 from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import AnonymousUser
+from django.core.exceptions import ObjectDoesNotExist
 from django.utils.deprecation import MiddlewareMixin
 from django.utils.functional import SimpleLazyObject
 
@@ -48,11 +49,15 @@ class BaseKeycloakMiddleware(MiddlewareMixin):
 
     def set_session_state_cookie_(self, request, response):
 
-        if not request.user.is_authenticated \
-                or not hasattr(request.user, 'oidc_profile'):
+        if not request.user.is_authenticated:
             return response
 
-        jwt = request.user.oidc_profile.jwt
+        try:
+            oidc_profile = request.user.oidc_profile
+        except ObjectDoesNotExist:
+            return response
+
+        jwt = oidc_profile.jwt
         if not jwt:
             return response
 
@@ -63,7 +68,7 @@ class BaseKeycloakMiddleware(MiddlewareMixin):
         # expires.
         response.set_cookie(
             cookie_name, value=jwt['session_state'],
-            expires=request.user.oidc_profile.refresh_expires_before,
+            expires=oidc_profile.refresh_expires_before,
             httponly=False
         )
 

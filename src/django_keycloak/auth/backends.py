@@ -2,7 +2,7 @@ import logging
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
 from django.utils import timezone
 from jose.exceptions import (
     ExpiredSignatureError,
@@ -42,16 +42,18 @@ class KeycloakAuthorizationBase(object):
         return user_obj._keycloak_perm_cache
 
     def get_keycloak_permissions(self, user_obj):
-        if not hasattr(user_obj, 'oidc_profile'):
+        try:
+            oidc_profile = user_obj.oidc_profile
+        except ObjectDoesNotExist:
             return set()
 
         rpt_decoded = django_keycloak.services.oidc_profile\
-            .get_entitlement(oidc_profile=user_obj.oidc_profile)
+            .get_entitlement(oidc_profile=oidc_profile)
 
         if settings.KEYCLOAK_PERMISSIONS_METHOD == 'role':
             return [
                 role for role in rpt_decoded['resource_access'].get(
-                    user_obj.oidc_profile.realm.client.client_id,
+                    oidc_profile.realm.client.client_id,
                     {'roles': []}
                 )['roles']
             ]

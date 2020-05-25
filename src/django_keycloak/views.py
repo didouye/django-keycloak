@@ -14,6 +14,7 @@ except ImportError:
 
 from django.conf import settings
 from django.contrib.auth import authenticate, login, logout
+from django.core.exceptions import ObjectDoesNotExist
 from django.http.response import (
     HttpResponseBadRequest,
     HttpResponseServerError,
@@ -98,15 +99,19 @@ class LoginComplete(RedirectView):
 class Logout(RedirectView):
 
     def get_redirect_url(self, *args, **kwargs):
-        if hasattr(self.request.user, 'oidc_profile'):
+        try:
+            oidc_profile = self.request.user.oidc_profile
+        except ObjectDoesNotExist:
+            pass
+        else:
             self.request.realm.client.openid_api_client.logout(
-                self.request.user.oidc_profile.refresh_token
+                oidc_profile.refresh_token
             )
-            self.request.user.oidc_profile.access_token = None
-            self.request.user.oidc_profile.expires_before = None
-            self.request.user.oidc_profile.refresh_token = None
-            self.request.user.oidc_profile.refresh_expires_before = None
-            self.request.user.oidc_profile.save(update_fields=[
+            oidc_profile.access_token = None
+            oidc_profile.expires_before = None
+            oidc_profile.refresh_token = None
+            oidc_profile.refresh_expires_before = None
+            oidc_profile.save(update_fields=[
                 'access_token',
                 'expires_before',
                 'refresh_token',
