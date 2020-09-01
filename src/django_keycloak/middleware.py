@@ -49,7 +49,7 @@ class BaseKeycloakMiddleware(MiddlewareMixin):
 
     def set_session_state_cookie_(self, request, response):
 
-        if not request.user.is_authenticated:
+        if not request.user or not request.user.is_authenticated:
             return response
 
         try:

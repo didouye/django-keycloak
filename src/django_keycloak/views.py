@@ -44,10 +44,15 @@ class Login(RedirectView):
 
         self.request.session['oidc_state'] = str(nonce.state)
 
+        if settings.KEYCLOAK_VERSION >= 11:
+            scope = 'openid profile email'
+        else:
+            scope = 'openid given_name family_name email'
+
         authorization_url = self.request.realm.client.openid_api_client\
             .authorization_url(
                 redirect_uri=nonce.redirect_uri,
-                scope='openid given_name family_name email',
+                scope=scope,
                 state=str(nonce.state)
             )
 
