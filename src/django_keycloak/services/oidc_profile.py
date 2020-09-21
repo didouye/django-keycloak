@@ -110,12 +110,18 @@ def update_or_create_user_and_oidc_profile(client, id_token_object):
             UserModel.objects.filter(username=email).update(
                 username=id_token_object[settings.KEYCLOAK_USERNAME_FIELD]
             )
+
+        # Here we force the password to a fake non empty password.
+        # This is done because by default, django the password
+        # in AbstractBaseUser as non blankable. So any futher updates of a user will failed
+        # if no password is set here.
         user, _ = UserModel.objects.update_or_create(
             username=id_token_object[settings.KEYCLOAK_USERNAME_FIELD],
             defaults={
                 email_field_name: email,
                 "first_name": id_token_object.get("given_name", ""),
                 "last_name": id_token_object.get("family_name", ""),
+                "password": "fake-password",
             },
         )
 

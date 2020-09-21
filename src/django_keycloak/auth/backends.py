@@ -51,6 +51,9 @@ class KeycloakAuthorizationBase(object):
             .get_entitlement(oidc_profile=oidc_profile)
 
         if settings.KEYCLOAK_PERMISSIONS_METHOD == 'role':
+            if 'resource_access' not in rpt_decoded:
+                return set()
+
             return [
                 role for role in rpt_decoded['resource_access'].get(
                     oidc_profile.realm.client.client_id,
